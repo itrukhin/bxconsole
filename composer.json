@@ -10,9 +10,13 @@
         "email": "mail@itrukhin.ru",
         "homepage": "https://itrukhin.ru/"
     }],
+    "repositories": [
+        {"type": "composer", "url": "https://repo.packagist.com/itrukhin/"},
+        {"packagist.org": false}
+    ],
     "require": {
         "php": "^7.1",
-        "symfony/console": "^5.3"
+        "symfony/console": "^4.1"
     },
     "autoload": {
         "psr-4": {
