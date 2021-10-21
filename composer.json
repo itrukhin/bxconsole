@@ -1,0 +1,25 @@
+{
+    "type": "library",
+    "name": "itrukhin/bxconsole",
+    "description": "CLI helper for 1C-Bitrix",
+    "keywords": ["bitrix", "bitrix-cms", "1c-bitrix", "console"],
+    "homepage": "https://github.com/itrukhin/bxconsole.git",
+    "license": "MIT",
+    "authors": [{
+        "name": "Ivan Trukhin",
+        "email": "mail@itrukhin.ru",
+        "homepage": "https://itrukhin.ru/"
+    }],
+    "require": {
+        "php": "^7.1",
+        "symfony/console": "^5.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "bin": [
+        "bin/bxconsole"
+    ]
+}
