@@ -1,11 +1,10 @@
 <?php
-namespace App;
+namespace App\BxConsole;
 
-use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class BxConsoleApp extends Application {
+class Application extends \Symfony\Component\Console\Application {
 
     const VERSION = '1.0.0';
 
