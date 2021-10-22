@@ -1,8 +1,7 @@
 #!/usr/bin/php
 <?php
+error_reporting(E_ERROR);
 require_once __DIR__ . '/../../../autoload.php';
  
-use Symfony\Component\Console\Application;
- 
-$app = new Application();
+$app = new \App\BxConsoleApp();
 $app->run();
