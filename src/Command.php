@@ -1,7 +1,7 @@
 <?php
 namespace App\BxConsole;
 
-class Command extends Symfony\Component\Console\Command\Command {
+class Command extends \Symfony\Component\Console\Command\Command {
 
     /**
      * @return Application
