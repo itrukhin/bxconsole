@@ -16,6 +16,8 @@ class Application extends \Symfony\Component\Console\Application {
     {
         parent::__construct($name, $version);
 
+
+        $this->loadEnv();
         $this->getDocumentRoot();
         $this->isBitrixLoaded = $this->initializeBitrix();
 
@@ -42,6 +44,24 @@ class Application extends \Symfony\Component\Console\Application {
         return $exitCode;
     }
 
+    protected function loadEnv() {
+
+        if(class_exists('\Symfony\Component\Dotenv\Dotenv')) {
+            $envFile = realpath(__DIR__ . '/../../../../.env');
+            if(!is_file($envFile)) {
+                $envFile = realpath(__DIR__ . '/../../../../../.env');
+            }
+            if(is_file($envFile)) {
+                try {
+                    $env = new \Symfony\Component\Dotenv\Dotenv();
+                    $env->load($envFile);
+                } catch (\Exception $e) {
+
+                }
+            }
+        }
+    }
+
     /**
      * @return bool
      */
@@ -58,23 +78,7 @@ class Application extends \Symfony\Component\Console\Application {
             /** @noinspection PhpUnusedLocalVariableInspection */
             $DB, $DBType, $DBHost, $DBLogin, $DBPassword, $DBName, $DBDebug, $DBDebugToFile, $APPLICATION, $USER, $DBSQLServerType;
 
-            /*
-             * Clean $_ENV for run \Symfony\Component\Dotenv\Dotenv()
-             */
-            $env = [];
-            if(is_array($_ENV)) {
-                $env = $_ENV;
-                unset($_ENV);
-            }
-
             require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
-
-            // restore $_ENV variables
-            if(is_array($_ENV)) {
-                $_ENV = array_merge($_ENV, $env);
-            } else if(!empty($env)) {
-                $_ENV = $env;
-            }
 
             if (defined('B_PROLOG_INCLUDED') && B_PROLOG_INCLUDED === true) {
                 return true;
@@ -91,11 +95,16 @@ class Application extends \Symfony\Component\Console\Application {
 
         $_SERVER['DOCUMENT_ROOT'] = realpath(__DIR__ . '/../../../../');
         if(!$this->checkBitrix()) {
+            if(isset($_ENV['APP_DOCUMENT_ROOT']) && is_dir($_ENV['APP_DOCUMENT_ROOT'])) {
+                $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'] = $_ENV['APP_DOCUMENT_ROOT'];
+                return $DOCUMENT_ROOT;
+            }
             $composerFile = realpath(__DIR__ . '/../../../../composer.json');
             if(is_file($composerFile)) {
                 $composerConfig = json_decode(file_get_contents($composerFile), true);
-                if(isset($composerConfig['extra']['document-root'])) {
-                    $_SERVER['DOCUMENT_ROOT'] = $composerConfig['extra']['document-root'];
+                if(isset($composerConfig['extra']['document-root']) && is_dir($composerConfig['extra']['document-root'])) {
+                    $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'] = $composerConfig['extra']['document-root'];
+                    return $DOCUMENT_ROOT;
                 }
             }
         }
