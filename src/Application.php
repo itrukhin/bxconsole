@@ -16,13 +16,18 @@ class Application extends \Symfony\Component\Console\Application {
     {
         parent::__construct($name, $version);
 
-
         $this->loadEnv();
-        $this->getDocumentRoot();
-        $this->isBitrixLoaded = $this->initializeBitrix();
 
-        foreach($this->getModulesCommands() as $command) {
-            $this->add($command);
+        $this->getDocumentRoot();
+
+        $loader = new \App\BxConsole\Bitrix\Loader();
+
+        $this->isBitrixLoaded = $loader->initializeBitrix();
+
+        if($this->isBitrixLoaded) {
+            foreach($loader->getModulesCommands() as $command) {
+                $this->add($command);
+            }
         }
     }
 
@@ -63,90 +68,28 @@ class Application extends \Symfony\Component\Console\Application {
     }
 
     /**
-     * @return bool
-     */
-    protected function initializeBitrix() {
-
-        if($this->checkBitrix()) {
-
-            /**
-             * Declare global legacy variables
-             *
-             * Including kernel here makes them local by default but some modules depend on them in installation class
-             */
-            global
-            /** @noinspection PhpUnusedLocalVariableInspection */
-            $DB, $DBType, $DBHost, $DBLogin, $DBPassword, $DBName, $DBDebug, $DBDebugToFile, $APPLICATION, $USER, $DBSQLServerType;
-
-            require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
-
-            if (defined('B_PROLOG_INCLUDED') && B_PROLOG_INCLUDED === true) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * @return false|mixed|string
      */
     protected function getDocumentRoot() {
 
         $_SERVER['DOCUMENT_ROOT'] = realpath(__DIR__ . '/../../../../');
-        if(!$this->checkBitrix()) {
-            if(isset($_ENV['APP_DOCUMENT_ROOT']) && is_dir($_ENV['APP_DOCUMENT_ROOT'])) {
-                $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'] = $_ENV['APP_DOCUMENT_ROOT'];
+
+        if(isset($_ENV['APP_DOCUMENT_ROOT']) && is_dir($_ENV['APP_DOCUMENT_ROOT'])) {
+            $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'] = $_ENV['APP_DOCUMENT_ROOT'];
+            return $DOCUMENT_ROOT;
+        }
+
+        $composerFile = realpath(__DIR__ . '/../../../../composer.json');
+        if(is_file($composerFile)) {
+            $composerConfig = json_decode(file_get_contents($composerFile), true);
+            if(isset($composerConfig['extra']['document-root']) && is_dir($composerConfig['extra']['document-root'])) {
+                $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'] = $composerConfig['extra']['document-root'];
                 return $DOCUMENT_ROOT;
             }
-            $composerFile = realpath(__DIR__ . '/../../../../composer.json');
-            if(is_file($composerFile)) {
-                $composerConfig = json_decode(file_get_contents($composerFile), true);
-                if(isset($composerConfig['extra']['document-root']) && is_dir($composerConfig['extra']['document-root'])) {
-                    $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'] = $composerConfig['extra']['document-root'];
-                    return $DOCUMENT_ROOT;
-                }
-            }
         }
+
         $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'];
 
         return $DOCUMENT_ROOT;
-    }
-
-    /**
-     * Check if Bitrix kernel exists
-     * @return bool
-     */
-    protected function checkBitrix() {
-
-        return is_file($_SERVER['DOCUMENT_ROOT'] . '/bitrix/.settings.php');
-    }
-
-    /**
-     * Load commands from specific cli.php
-     * @return array
-     * @throws \Bitrix\Main\LoaderException
-     */
-    protected function getModulesCommands()
-    {
-        $commands = [];
-
-        foreach (ModuleManager::getInstalledModules() as $module) {
-
-            $cliFile = getLocalPath('modules/' . $module['ID'] . '/cli.php');
-
-            if(!$cliFile) {
-                continue;
-            }
-
-            $config = include_once $this->getDocumentRoot() . $cliFile;
-
-            if (is_array($config['commands']) && count($config['commands']) > 0) {
-                Loader::includeModule($module['ID']);
-                $commands = array_merge($commands, $config['commands']);
-            }
-        }
-
-        return $commands;
     }
 }
