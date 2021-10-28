@@ -11,6 +11,8 @@ class Application extends \Symfony\Component\Console\Application {
     const VERSION = '1.0.0';
 
     private $isBitrixLoaded;
+    
+    private $bitrixCommands = [];
 
     public function __construct($name = 'BxConsole', $version = self::VERSION)
     {
@@ -29,6 +31,8 @@ class Application extends \Symfony\Component\Console\Application {
                 $this->add($command);
             }
         }
+
+        $this->add(new Cron());
     }
 
     public function doRun(InputInterface $input, OutputInterface $output) {
@@ -91,5 +95,13 @@ class Application extends \Symfony\Component\Console\Application {
         $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'];
 
         return $DOCUMENT_ROOT;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isBitrixLoaded(): bool
+    {
+        return $this->isBitrixLoaded;
     }
 }
