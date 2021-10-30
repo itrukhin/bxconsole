@@ -18,9 +18,8 @@ class Application extends \Symfony\Component\Console\Application {
     {
         parent::__construct($name, $version);
 
-        $this->loadEnv();
-
-        $this->getDocumentRoot();
+        EnvHelper::loadEnv();
+        EnvHelper::getDocumentRoot();
 
         $loader = new \App\BxConsole\Bitrix\Loader();
 
@@ -51,50 +50,6 @@ class Application extends \Symfony\Component\Console\Application {
         }
 
         return $exitCode;
-    }
-
-    protected function loadEnv() {
-
-        if(class_exists('\Symfony\Component\Dotenv\Dotenv')) {
-            $envFile = realpath(__DIR__ . '/../../../../.env');
-            if(!is_file($envFile)) {
-                $envFile = realpath(__DIR__ . '/../../../../../.env');
-            }
-            if(is_file($envFile)) {
-                try {
-                    $env = new \Symfony\Component\Dotenv\Dotenv();
-                    $env->load($envFile);
-                } catch (\Exception $e) {
-
-                }
-            }
-        }
-    }
-
-    /**
-     * @return false|mixed|string
-     */
-    protected function getDocumentRoot() {
-
-        $_SERVER['DOCUMENT_ROOT'] = realpath(__DIR__ . '/../../../../');
-
-        if(isset($_ENV['APP_DOCUMENT_ROOT']) && is_dir($_ENV['APP_DOCUMENT_ROOT'])) {
-            $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'] = $_ENV['APP_DOCUMENT_ROOT'];
-            return $DOCUMENT_ROOT;
-        }
-
-        $composerFile = realpath(__DIR__ . '/../../../../composer.json');
-        if(is_file($composerFile)) {
-            $composerConfig = json_decode(file_get_contents($composerFile), true);
-            if(isset($composerConfig['extra']['document-root']) && is_dir($composerConfig['extra']['document-root'])) {
-                $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'] = $composerConfig['extra']['document-root'];
-                return $DOCUMENT_ROOT;
-            }
-        }
-
-        $DOCUMENT_ROOT = $_SERVER['DOCUMENT_ROOT'];
-
-        return $DOCUMENT_ROOT;
     }
 
     /**
