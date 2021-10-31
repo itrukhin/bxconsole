@@ -2,15 +2,19 @@
 namespace App\BxConsole;
 
 use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\Common\Annotations\AnnotationRegistry;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use App\BxConsole\Annotations\Agent;
+use Symfony\Component\Lock\LockFactory;
+use Symfony\Component\Lock\Store\FlockStore;
+use Symfony\Component\Process\Process;
 
 class Cron extends Command {
 
-    const CRON_TAB_FILE = '/bitrix/tmp/.bx_crontab.php';
+    const EXEC_STATUS_SUCCESS = 'SUCCESS';
+    const EXEC_STATUS_ERROR = 'ERROR';
 
     /** @var LoggerInterface $log */
     private $log;
@@ -27,12 +31,38 @@ class Cron extends Command {
         
         $jobs = $this->getCronJobs();
 
-        $processes = [];
-
         if(!empty($jobs)) {
+
+            $lockStore = new FlockStore(pathinfo(EnvHelper::getCrontabFile(), PATHINFO_DIRNAME));
+            $lockFactory = new LockFactory($lockStore);
+            if($this->log) {
+                $lockFactory->setLogger($this->log);
+            }
+
             foreach($jobs as $cmd => $job) {
+
                 if($this->isActualJob($job)) {
 
+                    $lock = $lockFactory->createLock($this->getLockName($cmd));
+                    if($lock->acquire()) {
+
+                        $command = $this->getApplication()->find($cmd);
+                        $cmdInput = new ArrayInput(['command' => $cmd]);
+                        $returnCode = $command->run($cmdInput, $output);
+                        if(!$returnCode) {
+                            $jobs[$cmd]['status'] = self::EXEC_STATUS_SUCCESS;
+                        } else {
+                            $jobs[$cmd]['status'] = self::EXEC_STATUS_ERROR;
+                            $jobs[$cmd]['error'] = $returnCode;
+                        }
+                        $jobs[$cmd]['last_exec'] = time();
+                        $lock->release();
+
+                    } else {
+                        if($this->log) {
+                            $this->log->warning($cmd . " is locked");
+                        }
+                    }
                 }
             }
         }
@@ -40,6 +70,11 @@ class Cron extends Command {
         $this->setCronTab($jobs);
 
         $output->writeln(PHP_EOL . "Job sheduler for application comands");
+    }
+
+    protected function getLockName($cmd) {
+
+        return preg_replace('/[^a-z\d ]/i', '', $cmd);
     }
 
     protected function isActualJob($job) {
@@ -102,7 +137,7 @@ class Cron extends Command {
      */
     protected function setCronTab($agents) {
 
-        $file = $this->getCrontabFile();
+        $file = EnvHelper::getCrontabFile();
 
         if(!file_put_contents($file, '<?php return '.var_export($agents, true ).";\n")) {
             throw new \Exception('Unable to write ' . $file);
@@ -116,7 +151,7 @@ class Cron extends Command {
 
         $cronTab = [];
 
-        $file = $this->getCrontabFile();
+        $file = EnvHelper::getCrontabFile();
 
         if(file_exists($file)) {
             $cronTab = include $file;
@@ -125,15 +160,5 @@ class Cron extends Command {
         return (is_array($cronTab) ? $cronTab : []);
     }
 
-    /**
-     * @return mixed|string
-     */
-    protected function getCrontabFile() {
 
-        if(isset($_ENV['BX_CONSOLE_CRONTAB']) && $_ENV['BX_CONSOLE_CRONTAB']) {
-            return $_ENV['BX_CONSOLE_CRONTAB'];
-        }
-
-        return EnvHelper::getDocumentRoot() . self::CRON_TAB_FILE;
-    }
 }

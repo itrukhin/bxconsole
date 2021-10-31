@@ -5,6 +5,8 @@ use Psr\Log\LoggerInterface;
 
 class EnvHelper {
 
+    const CRON_TAB_FILE = '/bitrix/tmp/.bx_crontab.php';
+
     /**
      *
      */
@@ -61,7 +63,7 @@ class EnvHelper {
 
     /**
      * @param $name
-     * @return LoggerInterface|null
+     * @return LoggerInterface|false
      */
     public static function getLogger($channel) {
 
@@ -74,5 +76,17 @@ class EnvHelper {
         }
 
         return false;
+    }
+
+    /**
+     * @return mixed|string
+     */
+    public static function getCrontabFile() {
+
+        if(isset($_ENV['BX_CONSOLE_CRONTAB']) && $_ENV['BX_CONSOLE_CRONTAB']) {
+            return $_ENV['BX_CONSOLE_CRONTAB'];
+        }
+
+        return self::getDocumentRoot() . self::CRON_TAB_FILE;
     }
 }
