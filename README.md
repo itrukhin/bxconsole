@@ -1,2 +1,2 @@
 # bxconsole
-Console manager for Bitrix
+Console manager for 1C-Bitrix
