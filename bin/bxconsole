@@ -2,6 +2,7 @@
 <?php
 error_reporting(E_ERROR);
 require_once __DIR__ . '/../../../autoload.php';
- 
+
+set_time_limit(600);
 $app = new \App\BxConsole\Application();
 $app->run();

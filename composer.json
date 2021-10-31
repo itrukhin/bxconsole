@@ -1,7 +1,7 @@
 {
     "type": "library",
     "name": "itrukhin/bxconsole",
-    "description": "CLI helper for 1C-Bitrix",
+    "description": "CLI manager for 1C-Bitrix",
     "keywords": ["bitrix", "bitrix-cms", "1c-bitrix", "console"],
     "homepage": "https://github.com/itrukhin/bxconsole.git",
     "license": "MIT",
@@ -15,6 +15,7 @@
         "psr/log": "^1.0.1 || ^2.0 || ^3.0",
         "symfony/lock": "^5.3",
         "symfony/console": "^4.1",
+        "symfony/process": "^5.3",
         "doctrine/annotations": "1.*"
     },
     "autoload": {

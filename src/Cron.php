@@ -1,6 +1,7 @@
 <?php
 namespace App\BxConsole;
 
+use Bitrix\Main\Type\DateTime;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -15,9 +16,21 @@ class Cron extends Command {
 
     const EXEC_STATUS_SUCCESS = 'SUCCESS';
     const EXEC_STATUS_ERROR = 'ERROR';
+    /**
+     * Глобальный таймаут запуска процесса.
+     * Устанавливает TTL блокировки
+     */
+    const EXEC_TIMEOUT = 600;
+
+    /**
+     * Период запуска задач кроном
+     */
+    const BX_CRON_PERIOD = 60;
 
     /** @var LoggerInterface $log */
     private $log;
+
+    private $minAgentPeriod = self::BX_CRON_PERIOD;
 
     protected function configure() {
 
@@ -28,8 +41,16 @@ class Cron extends Command {
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->log = EnvHelper::getLogger('bx_cron');
-        
+
         $jobs = $this->getCronJobs();
+
+        /*
+         * Минимально допустимый период выполнения одной задачи
+         * при котором гарантируется выполнение всех задач
+         */
+        $this->minAgentPeriod = (count($jobs) + 1) * self::BX_CRON_PERIOD;
+
+        $workedJobs = [];
 
         if(!empty($jobs)) {
 
@@ -43,20 +64,59 @@ class Cron extends Command {
 
                 if($this->isActualJob($job)) {
 
-                    $lock = $lockFactory->createLock($this->getLockName($cmd));
+                    $lock = $lockFactory->createLock($this->getLockName($cmd), self::EXEC_TIMEOUT);
                     if($lock->acquire()) {
+
+                        $workedJobs[$cmd] = $job;
 
                         $command = $this->getApplication()->find($cmd);
                         $cmdInput = new ArrayInput(['command' => $cmd]);
-                        $returnCode = $command->run($cmdInput, $output);
-                        if(!$returnCode) {
-                            $jobs[$cmd]['status'] = self::EXEC_STATUS_SUCCESS;
-                        } else {
-                            $jobs[$cmd]['status'] = self::EXEC_STATUS_ERROR;
-                            $jobs[$cmd]['error'] = $returnCode;
+                        try {
+
+                            $timeStart = microtime(true);
+                            $returnCode = $command->run($cmdInput, $output);
+
+                            if(!$returnCode) {
+
+                                $workedJobs[$cmd]['status'] = self::EXEC_STATUS_SUCCESS;
+                                $msg = sprintf("%s: SUCCESS [%.2f s]", $cmd, microtime(true) - $timeStart);
+                                if($this->log) {
+                                    $this->log->alert($msg);
+                                }
+                                $output->writeln(PHP_EOL . $msg);
+
+                            } else {
+
+                                $workedJobs[$cmd]['status'] = self::EXEC_STATUS_ERROR;
+                                $workedJobs[$cmd]['error_code'] = $returnCode;
+                                $msg = sprintf("%s: ERROR [%.2f s]", $cmd, microtime(true) - $timeStart);
+                                if($this->log) {
+                                    $this->log->alert($msg);
+                                }
+                                $output->writeln(PHP_EOL . $msg);
+                            }
+
+                        } catch (\Exception $e) {
+
+                            $workedJobs[$cmd]['status'] = self::EXEC_STATUS_ERROR;
+                            $workedJobs[$cmd]['error'] = $e->getMessage();
+                            if($this->log) {
+                                $this->log->error($e, ['command' => $cmd]);
+                            }
+                            $output->writeln(PHP_EOL . 'ERROR: ' . $e->getMessage());
+
+                        } finally {
+
+                            $workedJobs[$cmd]['last_exec'] = time();
+                            $humanDate = new DateTime();
+                            $workedJobs[$cmd]['last_date_time'] = $humanDate->toString();
+                            $lock->release();
                         }
-                        $jobs[$cmd]['last_exec'] = time();
-                        $lock->release();
+
+                        /*
+                         * Выполняем только одну задачу
+                         */
+                        break;
 
                     } else {
                         if($this->log) {
@@ -67,23 +127,27 @@ class Cron extends Command {
             }
         }
 
-        $this->setCronTab($jobs);
-
-        $output->writeln(PHP_EOL . "Job sheduler for application comands");
+        $this->updateCronTab($workedJobs);
     }
 
     protected function getLockName($cmd) {
 
-        return preg_replace('/[^a-z\d ]/i', '', $cmd);
+        return preg_replace('/[^a-z\d ]/i', '_', $cmd);
     }
 
-    protected function isActualJob($job) {
+    protected function isActualJob(&$job) {
 
-        if($job['period']) {
-            if(time() - $job['last_exec'] >= intval($job['period'])) {
+        $period = intval($job['period']);
+
+        if($period > 0) {
+            if($period < $this->minAgentPeriod) {
+                $job['orig_period'] = $period;
+                $period = $job['period'] = $this->minAgentPeriod;
+            }
+            if(time() - $job['last_exec'] >= $period) {
                 return true;
             }
-        } else if(!empty($job['time'])) {
+        } else if(!empty($job['times'])) {
             //TODO:
         }
 
@@ -122,43 +186,62 @@ class Cron extends Command {
         }
 
         $crontab = $this->getCronTab();
-        foreach($crontab as $cmd => $job) {
-            if(is_array($job) && isset($agents[$cmd])) {
-                $agents[$cmd] = array_merge($job, $agents[$cmd]);
+
+        if(is_array($crontab)) {
+            foreach($crontab as $cmd => $job) {
+                if(is_array($job) && isset($agents[$cmd])) {
+                    $agents[$cmd] = array_merge($job, $agents[$cmd]);
+                }
             }
+        } else {
+            $this->setCronTab($agents);
         }
 
         return $agents;
     }
 
-    /**
-     * @param $agents
-     * @throws \Exception
-     */
-    protected function setCronTab($agents) {
+    protected function updateCronTab($changedAgents) {
 
-        $file = EnvHelper::getCrontabFile();
+        $crontab = $this->getCronTab();
 
-        if(!file_put_contents($file, '<?php return '.var_export($agents, true ).";\n")) {
-            throw new \Exception('Unable to write ' . $file);
+        $crontab = array_merge($crontab, $changedAgents);
+
+        $this->setCronTab($crontab);
+    }
+
+
+    protected function setCronTab(array $agents) {
+
+        $filename = EnvHelper::getCrontabFile();
+
+        $fh = fopen($filename, 'c');
+        if (flock($fh, LOCK_EX)) {
+            ftruncate($fh, 0);
+            if(!fwrite($fh, json_encode($agents, JSON_PRETTY_PRINT))) {
+                throw new \Exception('Unable to write BX_CRONTAB : ' . $filename);
+            }
         }
+        flock($fh, LOCK_UN);
+        fclose($fh);
     }
 
     /**
-     * @return array
+     * @return mixed|null
      */
     protected function getCronTab() {
 
-        $cronTab = [];
+        $cronTab = null;
 
-        $file = EnvHelper::getCrontabFile();
+        $filename = EnvHelper::getCrontabFile();
 
-        if(file_exists($file)) {
-            $cronTab = include $file;
+        $fh = fopen($filename, 'r');
+        if(flock($fh, LOCK_SH)) {
+            $data = @fread($fh, filesize($filename));
+            $cronTab = json_decode($data, true);
         }
+        flock($fh, LOCK_UN);
+        fclose($fh);
 
-        return (is_array($cronTab) ? $cronTab : []);
+        return $cronTab;
     }
-
-
 }

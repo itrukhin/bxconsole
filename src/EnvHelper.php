@@ -5,11 +5,8 @@ use Psr\Log\LoggerInterface;
 
 class EnvHelper {
 
-    const CRON_TAB_FILE = '/bitrix/tmp/.bx_crontab.php';
+    const CRON_TAB_FILE = '/bitrix/tmp/bx_crontab.json';
 
-    /**
-     *
-     */
     public static function loadEnv() {
 
         if(class_exists('\Symfony\Component\Dotenv\Dotenv')) {
@@ -52,18 +49,9 @@ class EnvHelper {
         return $_SERVER['DOCUMENT_ROOT'];
     }
 
-    public static function getBinPath() {
-
-        if(isset($_ENV['BX_CONSOLE_BIN']) && is_dir($_ENV['BX_CONSOLE_BIN'])) {
-            return $_ENV['BX_CONSOLE_BIN'];
-        }
-
-        return realpath(__DIR__ . '/../../../bin');
-    }
-
     /**
-     * @param $name
-     * @return LoggerInterface|false
+     * @param $channel
+     * @return false|LoggerInterface
      */
     public static function getLogger($channel) {
 
@@ -83,8 +71,8 @@ class EnvHelper {
      */
     public static function getCrontabFile() {
 
-        if(isset($_ENV['BX_CONSOLE_CRONTAB']) && $_ENV['BX_CONSOLE_CRONTAB']) {
-            return $_ENV['BX_CONSOLE_CRONTAB'];
+        if(isset($_ENV['BX_CRONTAB_FOLDER']) && $_ENV['BX_CRONTAB_FOLDER']) {
+            return rtrim($_ENV['BX_CRONTAB_FOLDER'], "/") . '/bx_crontab.json';
         }
 
         return self::getDocumentRoot() . self::CRON_TAB_FILE;

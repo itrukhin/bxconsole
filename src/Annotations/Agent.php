@@ -16,18 +16,18 @@ class Agent {
      */
     public $times;
 
-    /** @var integer */
-    public $timeout = 0;
-
-    /** @var integer $priority */
-    public $priority = 100;
+//    /** @var integer */
+//    public $timeout = 0;
+//
+//    /** @var integer $priority */
+//    public $priority = 100;
 
     public function toArray() {
 
         return [
             'period' => (int) $this->period,
-            'time' => $this->time,
-            'timeout' => $this->timeout,
+            'times' => $this->times,
+            //'timeout' => $this->timeout,
         ];
     }
 }
