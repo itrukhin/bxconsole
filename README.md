@@ -1,2 +1,2 @@
 # bxconsole
-Console manager and agent sheduler for 1C-Bitrix
+Console manager and agent scheduler for 1C-Bitrix
