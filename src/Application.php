@@ -59,4 +59,9 @@ class Application extends \Symfony\Component\Console\Application {
     {
         return $this->isBitrixLoaded;
     }
+
+    public function getDocumentRoot() {
+
+        return EnvHelper::getDocumentRoot();
+    }
 }
