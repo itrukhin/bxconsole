@@ -26,7 +26,7 @@ class EnvHelper {
     }
 
     /**
-     * @return false|mixed|string
+     * @return false|string
      */
     public static function getDocumentRoot() {
 

@@ -12,7 +12,7 @@ use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\Store\FlockStore;
 use Symfony\Component\Process\Process;
 
-class Cron extends Command {
+class Cron extends BxCommand {
 
     const EXEC_STATUS_SUCCESS = 'SUCCESS';
     const EXEC_STATUS_ERROR = 'ERROR';

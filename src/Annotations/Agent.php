@@ -12,7 +12,7 @@ class Agent {
 
     /**
      * Times of day in HH:MM format
-     * @var string[]
+     * @var array<string>
      */
     public $times;
 
