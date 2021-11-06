@@ -163,8 +163,8 @@ class Cron extends BxCommand {
 
         $selfCommands = [];
         foreach($commands as $command) {
-            /** @var Command $command */
-            if($command instanceof Command) {
+            /** @var BxCommand $command */
+            if($command instanceof BxCommand) {
                 $name = $command->getName();
                 $selfCommands[$name] = [
                     'object' => $command,
