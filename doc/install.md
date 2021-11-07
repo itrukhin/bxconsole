@@ -15,7 +15,7 @@ BxConsole использует [symfony/dotenv](https://github.com/symfony/doten
 
 1. BxConsole по умолчанию использует в качестве `$DOCUMENT_ROOT` папку, в которой находится папка `vendor`. 
 2. Если это так, то можно дополнительно ничего не настраивать.
-3. в файле .env указать через параметр `APP_DOCUMENT_ROOT`
+3. в файле `.env` указать через параметр `APP_DOCUMENT_ROOT`
 4. Указать в файле `composer.json` в секции `extra`
 ```json
 {
