@@ -26,3 +26,6 @@ BxConsole использует [symfony/dotenv](https://github.com/symfony/doten
 ```
 При правильной установке и вызове консоли с параметром -vv - вы увидите версию ядра битрикс.
 ![Первый запуск](https://raw.githubusercontent.com/itrukhin/bxconsole/master/doc/img/first_run.png)
+
+---
+[к содержанию](README.md)
