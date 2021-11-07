@@ -3,8 +3,12 @@ namespace App\BxConsole;
 
 use App\BxConsole\Annotations\Command;
 use Doctrine\Common\Annotations\AnnotationReader;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 
-class BxCommand extends \Symfony\Component\Console\Command\Command {
+class BxCommand extends \Symfony\Component\Console\Command\Command implements LoggerAwareInterface {
+
+    use LoggerAwareTrait;
 
     /**
      * @return Application
@@ -35,6 +39,9 @@ class BxCommand extends \Symfony\Component\Console\Command\Command {
         return $reader->getClassAnnotation($r, $annotationName);
     }
 
+    /**
+     * @throws \ReflectionException
+     */
     protected function configure() {
 
         /** @var Command $annotation */
@@ -45,5 +52,13 @@ class BxCommand extends \Symfony\Component\Console\Command\Command {
             $this->setDescription($annotation->description);
             $this->setHelp($annotation->help);
         }
+    }
+
+    /**
+     * @return \Psr\Log\LoggerInterface|null
+     */
+    protected function getLogger() {
+
+        return $this->logger;
     }
 }
