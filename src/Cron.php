@@ -3,14 +3,12 @@ namespace App\BxConsole;
 
 use Bitrix\Main\Type\DateTime;
 use Doctrine\Common\Annotations\AnnotationReader;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use App\BxConsole\Annotations\Agent;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\Store\FlockStore;
-use Symfony\Component\Process\Process;
 
 class Cron extends BxCommand {
 
@@ -27,9 +25,6 @@ class Cron extends BxCommand {
      */
     const BX_CRON_PERIOD = 60;
 
-    /** @var LoggerInterface $log */
-    private $log;
-
     private $minAgentPeriod = self::BX_CRON_PERIOD;
 
     protected function configure() {
@@ -40,7 +35,7 @@ class Cron extends BxCommand {
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->log = EnvHelper::getLogger('bx_cron');
+        $this->setLogger(EnvHelper::getLogger('bx_cron'));
 
         $jobs = $this->getCronJobs();
 
@@ -56,8 +51,8 @@ class Cron extends BxCommand {
 
             $lockStore = new FlockStore(pathinfo(EnvHelper::getCrontabFile(), PATHINFO_DIRNAME));
             $lockFactory = new LockFactory($lockStore);
-            if($this->log) {
-                $lockFactory->setLogger($this->log);
+            if($this->logger) {
+                $lockFactory->setLogger($this->logger);
             }
 
             foreach($jobs as $cmd => $job) {
@@ -80,8 +75,8 @@ class Cron extends BxCommand {
 
                                 $workedJobs[$cmd]['status'] = self::EXEC_STATUS_SUCCESS;
                                 $msg = sprintf("%s: SUCCESS [%.2f s]", $cmd, microtime(true) - $timeStart);
-                                if($this->log) {
-                                    $this->log->alert($msg);
+                                if($this->logger) {
+                                    $this->logger->alert($msg);
                                 }
                                 $output->writeln(PHP_EOL . $msg);
 
@@ -90,8 +85,8 @@ class Cron extends BxCommand {
                                 $workedJobs[$cmd]['status'] = self::EXEC_STATUS_ERROR;
                                 $workedJobs[$cmd]['error_code'] = $returnCode;
                                 $msg = sprintf("%s: ERROR [%.2f s]", $cmd, microtime(true) - $timeStart);
-                                if($this->log) {
-                                    $this->log->alert($msg);
+                                if($this->logger) {
+                                    $this->logger->alert($msg);
                                 }
                                 $output->writeln(PHP_EOL . $msg);
                             }
@@ -100,8 +95,8 @@ class Cron extends BxCommand {
 
                             $workedJobs[$cmd]['status'] = self::EXEC_STATUS_ERROR;
                             $workedJobs[$cmd]['error'] = $e->getMessage();
-                            if($this->log) {
-                                $this->log->error($e, ['command' => $cmd]);
+                            if($this->logger) {
+                                $this->logger->error($e, ['command' => $cmd]);
                             }
                             $output->writeln(PHP_EOL . 'ERROR: ' . $e->getMessage());
 
@@ -119,8 +114,8 @@ class Cron extends BxCommand {
                         break;
 
                     } else {
-                        if($this->log) {
-                            $this->log->warning($cmd . " is locked");
+                        if($this->logger) {
+                            $this->logger->warning($cmd . " is locked");
                         }
                     }
                 }
