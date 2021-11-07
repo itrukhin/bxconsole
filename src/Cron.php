@@ -35,7 +35,10 @@ class Cron extends BxCommand {
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->setLogger(EnvHelper::getLogger('bx_cron'));
+        $logger = EnvHelper::getLogger('bx_cron');
+        if($logger) {
+            $this->setLogger($logger);
+        }
 
         $jobs = $this->getCronJobs();
 
