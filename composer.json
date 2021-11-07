@@ -12,6 +12,7 @@
     }],
     "require": {
         "psr/log": "^1.0.1 || ^2.0 || ^3.0",
+        "symfony/dotenv": "^5.1",
         "symfony/lock": "^5.3",
         "symfony/console": "^4.1",
         "doctrine/annotations": "1.*"

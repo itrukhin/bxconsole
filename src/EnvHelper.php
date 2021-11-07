@@ -9,18 +9,16 @@ class EnvHelper {
 
     public static function loadEnv() {
 
-        if(class_exists('\Symfony\Component\Dotenv\Dotenv')) {
-            $envFile = realpath(__DIR__ . '/../../../../.env');
-            if(!is_file($envFile)) {
-                $envFile = realpath(__DIR__ . '/../../../../../.env');
-            }
-            if(is_file($envFile)) {
-                try {
-                    $env = new \Symfony\Component\Dotenv\Dotenv();
-                    $env->load($envFile);
-                } catch (\Exception $e) {
+        $envFile = realpath(__DIR__ . '/../../../../.env');
+        if(!is_file($envFile)) {
+            $envFile = realpath(__DIR__ . '/../../../../../.env');
+        }
+        if(is_file($envFile)) {
+            try {
+                $env = new \Symfony\Component\Dotenv\Dotenv();
+                $env->load($envFile);
+            } catch (\Exception $e) {
 
-                }
             }
         }
     }
