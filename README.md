@@ -10,7 +10,4 @@
 Хочу поблагодарить разрабочиков [Console Jedi](https://github.com/notamedia/console-jedi) за хороший код и документацию,
 которые очень помогли в создании этого расширения.
 
-## Установка
-```bash
-composer require itrukhin/bxconsole:dev-master
-```
+## [Документация](doc/README.md)
