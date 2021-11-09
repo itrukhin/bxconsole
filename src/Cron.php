@@ -14,6 +14,8 @@ class Cron extends BxCommand {
 
     const EXEC_STATUS_SUCCESS = 'SUCCESS';
     const EXEC_STATUS_ERROR = 'ERROR';
+    const EXEC_STATUS_WORK = 'WORK';
+
     /**
      * Глобальный таймаут запуска процесса.
      * Устанавливает TTL блокировки
@@ -48,8 +50,6 @@ class Cron extends BxCommand {
          */
         $this->minAgentPeriod = (count($jobs) + 1) * self::BX_CRON_PERIOD;
 
-        $workedJobs = [];
-
         if(!empty($jobs)) {
 
             $lockStore = new FlockStore(pathinfo(EnvHelper::getCrontabFile(), PATHINFO_DIRNAME));
@@ -65,7 +65,8 @@ class Cron extends BxCommand {
                     $lock = $lockFactory->createLock($this->getLockName($cmd), self::EXEC_TIMEOUT);
                     if($lock->acquire()) {
 
-                        $workedJobs[$cmd] = $job;
+                        $job['status'] = self::EXEC_STATUS_WORK;
+                        $this->updaateJob($cmd, $job);
 
                         $command = $this->getApplication()->find($cmd);
                         $cmdInput = new ArrayInput(['command' => $cmd]);
@@ -76,7 +77,8 @@ class Cron extends BxCommand {
 
                             if(!$returnCode) {
 
-                                $workedJobs[$cmd]['status'] = self::EXEC_STATUS_SUCCESS;
+                                $job['status'] = self::EXEC_STATUS_SUCCESS;
+
                                 $msg = sprintf("%s: SUCCESS [%.2f s]", $cmd, microtime(true) - $timeStart);
                                 if($this->logger) {
                                     $this->logger->alert($msg);
@@ -85,8 +87,9 @@ class Cron extends BxCommand {
 
                             } else {
 
-                                $workedJobs[$cmd]['status'] = self::EXEC_STATUS_ERROR;
-                                $workedJobs[$cmd]['error_code'] = $returnCode;
+                                $job['status'] = self::EXEC_STATUS_ERROR;
+                                $job['error_code'] = $returnCode;
+
                                 $msg = sprintf("%s: ERROR [%.2f s]", $cmd, microtime(true) - $timeStart);
                                 if($this->logger) {
                                     $this->logger->alert($msg);
@@ -96,8 +99,10 @@ class Cron extends BxCommand {
 
                         } catch (\Exception $e) {
 
-                            $workedJobs[$cmd]['status'] = self::EXEC_STATUS_ERROR;
-                            $workedJobs[$cmd]['error'] = $e->getMessage();
+                            $job['status'] = self::EXEC_STATUS_ERROR;
+                            $job['error'] = $e->getMessage();
+
+
                             if($this->logger) {
                                 $this->logger->error($e, ['command' => $cmd]);
                             }
@@ -105,14 +110,15 @@ class Cron extends BxCommand {
 
                         } finally {
 
-                            $workedJobs[$cmd]['last_exec'] = time();
+                            $job['last_exec'] = time();
                             $humanDate = new DateTime();
-                            $workedJobs[$cmd]['last_date_time'] = $humanDate->toString();
+                            $job['last_date_time'] = $humanDate->toString();
                             $lock->release();
                         }
 
+                        $this->updaateJob($cmd, $job);
                         /*
-                         * Выполняем только одну задачу
+                         * Let's do just one task
                          */
                         break;
 
@@ -124,8 +130,6 @@ class Cron extends BxCommand {
                 }
             }
         }
-
-        $this->updateCronTab($workedJobs);
     }
 
     protected function getLockName($cmd) {
@@ -134,6 +138,10 @@ class Cron extends BxCommand {
     }
 
     protected function isActualJob(&$job) {
+
+        if(isset($job['status']) && $job['status'] !== self::EXEC_STATUS_SUCCESS) {
+            return false;
+        }
 
         $period = intval($job['period']);
 
@@ -191,14 +199,19 @@ class Cron extends BxCommand {
                     $agents[$cmd] = array_merge($job, $agents[$cmd]);
                 }
             }
-        } else {
-            $this->setCronTab($agents);
         }
+
+        $this->setCronTab($agents);
 
         return $agents;
     }
 
-    protected function updateCronTab($changedAgents) {
+    protected function updaateJob($cmd, $job) {
+
+        $this->updateCronTab([$cmd => $job]);
+    }
+
+    protected function updateCronTab(array $changedAgents) {
 
         $crontab = $this->getCronTab();
 
