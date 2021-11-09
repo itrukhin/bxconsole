@@ -7,6 +7,9 @@ class EnvHelper {
 
     const CRON_TAB_FILE = '/bitrix/tmp/bx_crontab.json';
 
+    const SWITCH_STATE_ON = 'on';
+    const SWITCH_STATE_OFF = 'off';
+
     public static function loadEnv() {
 
         $envFile = realpath(__DIR__ . '/../../../../.env');
@@ -74,5 +77,24 @@ class EnvHelper {
         }
 
         return self::getDocumentRoot() . self::CRON_TAB_FILE;
+    }
+
+    public static function getSwitch($name, $state) {
+
+        if(isset($_ENV[$name])) {
+
+            $val = strtolower(trim($_ENV[$name]));
+            if($state == self::SWITCH_STATE_ON) {
+                if($val === self::SWITCH_STATE_ON || $val === '1' || $val === 'true') {
+                    return true;
+                }
+            } else if($state == self::SWITCH_STATE_OFF) {
+                if($val === self::SWITCH_STATE_OFF || $val === '0' || $val === 'false') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

@@ -42,6 +42,13 @@ class Cron extends BxCommand {
             $this->setLogger($logger);
         }
 
+        if(EnvHelper::getSwitch('BX_CRONTAB_RUN', EnvHelper::SWITCH_STATE_OFF)) {
+            if($this->logger) {
+                $this->logger->alert('BxCron switch off');
+            }
+            return 0;
+        }
+
         $jobs = $this->getCronJobs();
 
         /*
