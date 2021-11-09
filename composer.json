@@ -15,7 +15,8 @@
         "symfony/dotenv": "^5.1",
         "symfony/lock": "^5.3",
         "symfony/console": "^4.1",
-        "doctrine/annotations": "1.*"
+        "doctrine/annotations": "1.*",
+        "symfony/process": "^5.3"
     },
     "autoload": {
         "psr-4": {
