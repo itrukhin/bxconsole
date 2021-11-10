@@ -32,7 +32,7 @@ class EnvHelper {
     }
 
     /**
-     * @return false|string
+     * @return string
      */
     public static function getDocumentRoot() {
 
@@ -52,7 +52,7 @@ class EnvHelper {
             }
         }
 
-        return $_SERVER['DOCUMENT_ROOT'];
+        return (string) $_SERVER['DOCUMENT_ROOT'];
     }
 
     /**

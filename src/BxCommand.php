@@ -19,7 +19,7 @@ class BxCommand extends \Symfony\Component\Console\Command\Command implements Lo
     }
 
     /**
-     * @return false|string
+     * @return string
      */
     public function getDocumentRoot() {
 

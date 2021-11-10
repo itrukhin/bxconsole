@@ -188,11 +188,9 @@ class Cron extends BxCommand {
 
         $crontab = $this->getCronTab();
 
-        if(is_array($crontab)) {
-            foreach($crontab as $cmd => $job) {
-                if(is_array($job) && isset($agents[$cmd])) {
-                    $agents[$cmd] = array_merge($job, $agents[$cmd]);
-                }
+        foreach($crontab as $cmd => $job) {
+            if(is_array($job) && isset($agents[$cmd])) {
+                $agents[$cmd] = array_merge($job, $agents[$cmd]);
             }
         }
 
@@ -232,18 +230,22 @@ class Cron extends BxCommand {
     }
 
     /**
-     * @return mixed|null
+     * @return array
      */
     protected function getCronTab() {
 
-        $cronTab = null;
+        $cronTab = [];
 
         $filename = EnvHelper::getCrontabFile();
 
         $fh = fopen($filename, 'r');
         if(flock($fh, LOCK_SH)) {
-            $data = @fread($fh, filesize($filename));
-            $cronTab = json_decode($data, true);
+            if($data = @fread($fh, filesize($filename))) {
+                $decoded = json_decode($data, true);
+                if(is_array($decoded)) {
+                    $cronTab = $decoded;
+                }
+            }
         }
         flock($fh, LOCK_UN);
         fclose($fh);

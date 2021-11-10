@@ -60,8 +60,11 @@ class Application extends \Symfony\Component\Console\Application {
         return $this->isBitrixLoaded;
     }
 
+    /**
+     * @return string
+     */
     public function getDocumentRoot() {
 
-        return EnvHelper::getDocumentRoot();
+        return (EnvHelper::getDocumentRoot() ?: '');
     }
 }
