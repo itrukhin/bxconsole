@@ -108,7 +108,6 @@ class Cron extends BxCommand {
                         $job['last_exec'] = time();
                         $humanDate = new DateTime();
                         $job['last_date_time'] = $humanDate->toString();
-                        $lock->release();
                     }
 
                     $this->updaateJob($cmd, $job);
