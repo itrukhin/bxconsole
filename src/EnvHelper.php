@@ -10,6 +10,10 @@ class EnvHelper {
     const SWITCH_STATE_ON = 'on';
     const SWITCH_STATE_OFF = 'off';
 
+    const BX_CRONTAB_SINGLE_MODE = false;
+    const BX_CRONTAB_TIMEOUT = 600;
+    const BX_CRONTAB_PERIOD = 60;
+
     public static function loadEnv() {
 
         $envFile = realpath(__DIR__ . '/../../../../.env');
@@ -77,6 +81,24 @@ class EnvHelper {
         }
 
         return self::getDocumentRoot() . self::CRON_TAB_FILE;
+    }
+
+    public function getCrontabTimeout() {
+
+        if(isset($_ENV['BX_CRONTAB_FOLDER']) && is_numeric($_ENV['BX_CRONTAB_FOLDER'])) {
+            return (int) $_ENV['BX_CRONTAB_FOLDER'];
+        }
+
+        return self::BX_CRONTAB_TIMEOUT;
+    }
+
+    public function getBxCrontabPeriod() {
+
+        if(isset($_ENV['BX_CRONTAB_PERIOD']) && is_numeric($_ENV['BX_CRONTAB_PERIOD'])) {
+            return (int) $_ENV['BX_CRONTAB_PERIOD'];
+        }
+
+        return self::BX_CRONTAB_PERIOD;
     }
 
     public static function getSwitch($name, $state) {

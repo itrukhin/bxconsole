@@ -7,27 +7,16 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use App\BxConsole\Annotations\Agent;
-use Symfony\Component\Lock\LockFactory;
-use Symfony\Component\Lock\Store\FlockStore;
 
 class Cron extends BxCommand {
+
+    use LockableTrait;
 
     const EXEC_STATUS_SUCCESS = 'SUCCESS';
     const EXEC_STATUS_ERROR = 'ERROR';
     const EXEC_STATUS_WORK = 'WORK';
 
-    /**
-     * Глобальный таймаут запуска процесса.
-     * Устанавливает TTL блокировки
-     */
-    const EXEC_TIMEOUT = 600;
-
-    /**
-     * Период запуска задач кроном
-     */
-    const BX_CRON_PERIOD = 60;
-
-    private $minAgentPeriod = self::BX_CRON_PERIOD;
+    private $minAgentPeriod;
 
     protected function configure() {
 
@@ -49,99 +38,89 @@ class Cron extends BxCommand {
             return 0;
         }
 
+        if(!$this->lock()) {
+            $output->writeln("The command is already running in another process.");
+            if($this->logger) {
+                $this->logger->warning("The command is already running in another process.");
+            }
+            return 0;
+        }
+
         $jobs = $this->getCronJobs();
 
         /*
          * Минимально допустимый период выполнения одной задачи
          * при котором гарантируется выполнение всех задач
          */
-        $this->minAgentPeriod = (count($jobs) + 1) * self::BX_CRON_PERIOD;
+        $this->minAgentPeriod = (count($jobs) + 1) * EnvHelper::getBxCrontabPeriod();
 
         if(!empty($jobs)) {
-
-            $lockStore = new FlockStore(pathinfo(EnvHelper::getCrontabFile(), PATHINFO_DIRNAME));
-            $lockFactory = new LockFactory($lockStore);
-            if($this->logger) {
-                $lockFactory->setLogger($this->logger);
-            }
 
             foreach($jobs as $cmd => $job) {
 
                 if($this->isActualJob($job)) {
 
-                    $lock = $lockFactory->createLock($this->getLockName($cmd), self::EXEC_TIMEOUT);
-                    if($lock->acquire()) {
+                    $job['status'] = self::EXEC_STATUS_WORK;
+                    $this->updaateJob($cmd, $job);
 
-                        $job['status'] = self::EXEC_STATUS_WORK;
-                        $this->updaateJob($cmd, $job);
+                    $command = $this->getApplication()->find($cmd);
+                    $cmdInput = new ArrayInput(['command' => $cmd]);
+                    try {
 
-                        $command = $this->getApplication()->find($cmd);
-                        $cmdInput = new ArrayInput(['command' => $cmd]);
-                        try {
+                        $timeStart = microtime(true);
+                        $returnCode = $command->run($cmdInput, $output);
 
-                            $timeStart = microtime(true);
-                            $returnCode = $command->run($cmdInput, $output);
+                        if(!$returnCode) {
 
-                            if(!$returnCode) {
+                            $job['status'] = self::EXEC_STATUS_SUCCESS;
 
-                                $job['status'] = self::EXEC_STATUS_SUCCESS;
-
-                                $msg = sprintf("%s: SUCCESS [%.2f s]", $cmd, microtime(true) - $timeStart);
-                                if($this->logger) {
-                                    $this->logger->alert($msg);
-                                }
-                                $output->writeln(PHP_EOL . $msg);
-
-                            } else {
-
-                                $job['status'] = self::EXEC_STATUS_ERROR;
-                                $job['error_code'] = $returnCode;
-
-                                $msg = sprintf("%s: ERROR [%.2f s]", $cmd, microtime(true) - $timeStart);
-                                if($this->logger) {
-                                    $this->logger->alert($msg);
-                                }
-                                $output->writeln(PHP_EOL . $msg);
+                            $msg = sprintf("%s: SUCCESS [%.2f s]", $cmd, microtime(true) - $timeStart);
+                            if($this->logger) {
+                                $this->logger->alert($msg);
                             }
+                            $output->writeln(PHP_EOL . $msg);
 
-                        } catch (\Exception $e) {
+                        } else {
 
                             $job['status'] = self::EXEC_STATUS_ERROR;
-                            $job['error'] = $e->getMessage();
+                            $job['error_code'] = $returnCode;
 
-
+                            $msg = sprintf("%s: ERROR [%.2f s]", $cmd, microtime(true) - $timeStart);
                             if($this->logger) {
-                                $this->logger->error($e, ['command' => $cmd]);
+                                $this->logger->alert($msg);
                             }
-                            $output->writeln(PHP_EOL . 'ERROR: ' . $e->getMessage());
-
-                        } finally {
-
-                            $job['last_exec'] = time();
-                            $humanDate = new DateTime();
-                            $job['last_date_time'] = $humanDate->toString();
-                            $lock->release();
+                            $output->writeln(PHP_EOL . $msg);
                         }
 
-                        $this->updaateJob($cmd, $job);
-                        /*
-                         * Let's do just one task
-                         */
-                        break;
+                    } catch (\Exception $e) {
 
-                    } else {
+                        $job['status'] = self::EXEC_STATUS_ERROR;
+                        $job['error'] = $e->getMessage();
+
+
                         if($this->logger) {
-                            $this->logger->warning($cmd . " is locked");
+                            $this->logger->error($e, ['command' => $cmd]);
                         }
+                        $output->writeln(PHP_EOL . 'ERROR: ' . $e->getMessage());
+
+                    } finally {
+
+                        $job['last_exec'] = time();
+                        $humanDate = new DateTime();
+                        $job['last_date_time'] = $humanDate->toString();
+                        $lock->release();
                     }
+
+                    $this->updaateJob($cmd, $job);
+                    /*
+                     * Let's do just one task
+                     */
+                    break;
                 }
-            }
-        }
-    }
+            } // foreach($jobs as $cmd => $job)
+        } // if(!empty($jobs))
 
-    protected function getLockName($cmd) {
-
-        return preg_replace('/[^a-z\d ]/i', '_', $cmd);
+        $this->release();
     }
 
     protected function isActualJob(&$job) {
