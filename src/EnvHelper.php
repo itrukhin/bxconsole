@@ -83,7 +83,7 @@ class EnvHelper {
         return self::getDocumentRoot() . self::CRON_TAB_FILE;
     }
 
-    public function getCrontabTimeout() {
+    public static function getCrontabTimeout() {
 
         if(isset($_ENV['BX_CRONTAB_FOLDER']) && is_numeric($_ENV['BX_CRONTAB_FOLDER'])) {
             return (int) $_ENV['BX_CRONTAB_FOLDER'];
@@ -92,7 +92,7 @@ class EnvHelper {
         return self::BX_CRONTAB_TIMEOUT;
     }
 
-    public function getBxCrontabPeriod() {
+    public static function getBxCrontabPeriod() {
 
         if(isset($_ENV['BX_CRONTAB_PERIOD']) && is_numeric($_ENV['BX_CRONTAB_PERIOD'])) {
             return (int) $_ENV['BX_CRONTAB_PERIOD'];
