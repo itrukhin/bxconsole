@@ -13,6 +13,7 @@ class EnvHelper {
     const BX_CRONTAB_SINGLE_MODE = false;
     const BX_CRONTAB_TIMEOUT = 600;
     const BX_CRONTAB_PERIOD = 60;
+    const BX_CRONTAB_TIMEZONE = 'Europe/Moscow';
 
     public static function loadEnv() {
 
@@ -113,6 +114,39 @@ class EnvHelper {
             } else if($state == self::SWITCH_STATE_OFF) {
                 if($val === self::SWITCH_STATE_OFF || $val === '0' || $val === 'false') {
                     return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public static function timeZoneSet() {
+
+        $timeZone = self::BX_CRONTAB_TIMEZONE;
+
+        if(isset($_ENV['BX_CRONTAB_TIMEZONE']) && $_ENV['BX_CRONTAB_TIMEZONE']) {
+            $timeZone = trim($_ENV['BX_CRONTAB_TIMEZONE']);
+        }
+
+        date_default_timezone_set($timeZone);
+    }
+
+    public static function checkSleepInterval() {
+
+        if(isset($_ENV['BX_CRONTAB_SLEEP_TIME']) && $_ENV['BX_CRONTAB_SLEEP_TIME']) {
+            $intervals = explode(',', $_ENV['BX_CRONTAB_SLEEP_TIME']);
+            foreach($intervals as $interval) {
+                $times = explode('-', $interval);
+                if(count($times) != 2) {
+                    continue;
+                }
+                $minTime = Time24::validateTimeString($times[0]);
+                $maxTime = Time24::validateTimeString($times[1]);
+                if($minTime && $maxTime) {
+                    if(Time24::inInterval($minTime, $maxTime)) {
+                        return $interval;
+                    }
                 }
             }
         }

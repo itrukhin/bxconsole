@@ -39,9 +39,19 @@ class Cron extends BxCommand {
         }
 
         if(!$this->lock()) {
-            $output->writeln("The command is already running in another process.");
+            $msg = 'The command is already running in another process.';
+            $output->writeln($msg);
             if($this->logger) {
-                $this->logger->warning("The command is already running in another process.");
+                $this->logger->warning($msg);
+            }
+            return 0;
+        }
+
+        if($sleepInterval = EnvHelper::checkSleepInterval()) {
+            $msg = sprintf("Sleep in interval %s", $sleepInterval);
+            $output->writeln($msg);
+            if($this->logger) {
+                $this->logger->warning($msg);
             }
             return 0;
         }
