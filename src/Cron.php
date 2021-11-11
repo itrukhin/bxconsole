@@ -5,6 +5,7 @@ use Bitrix\Main\Type\DateTime;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use App\BxConsole\Annotations\Agent;
 
@@ -21,7 +22,8 @@ class Cron extends BxCommand {
     protected function configure() {
 
         $this->setName('system:cron')
-            ->setDescription('Job sheduler for application comands');
+            ->setDescription('Job sheduler for application comands')
+            ->addOption('clean', 'c', InputOption::VALUE_REQUIRED, 'Command to be clean crontab data (status, last exec)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -55,6 +57,30 @@ class Cron extends BxCommand {
             }
             return 0;
         }
+
+        $clean = $input->getOption('clean');
+        if($clean) {
+            $command = $this->getApplication()->find($clean);
+            $this->cleanJob($command->getName());
+            $output->writeln($command->getName() . " will be executed now");
+            return 0;
+        }
+
+        $this->executeJobs($output);
+
+        $this->release();
+    }
+
+    protected function cleanJob($command) {
+
+        $crontab = $this->getCronTab();
+
+        unset($crontab[$command]);
+
+        $this->setCronTab($crontab);
+    }
+
+    protected function executeJobs(OutputInterface $output) {
 
         $jobs = $this->getCronJobs();
 
@@ -128,8 +154,6 @@ class Cron extends BxCommand {
                 }
             } // foreach($jobs as $cmd => $job)
         } // if(!empty($jobs))
-
-        $this->release();
     }
 
     protected function isActualJob(&$job) {
