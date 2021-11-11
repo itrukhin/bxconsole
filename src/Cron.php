@@ -1,11 +1,14 @@
 <?php
 namespace App\BxConsole;
 
-use Bitrix\Main\Type\DateTime;
 use Doctrine\Common\Annotations\AnnotationReader;
+use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Helper\TableCell;
+use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use App\BxConsole\Annotations\Agent;
 
@@ -17,12 +20,17 @@ class Cron extends BxCommand {
     const EXEC_STATUS_ERROR = 'ERROR';
     const EXEC_STATUS_WORK = 'WORK';
 
+    const SORT_NAME = 'name';
+    const SORT_TIME = 'time';
+
     private $minAgentPeriod;
 
     protected function configure() {
 
         $this->setName('system:cron')
             ->setDescription('Job sheduler for application comands')
+            ->addOption('status', 's', InputOption::VALUE_NONE, 'Show BX_CRONTAB status table')
+            ->addOption('bytime', 't', InputOption::VALUE_NONE, 'Sort status table by exec time desc')
             ->addOption('clean', 'c', InputOption::VALUE_REQUIRED, 'Command to be clean crontab data (status, last exec)');
     }
 
@@ -31,6 +39,14 @@ class Cron extends BxCommand {
         $logger = EnvHelper::getLogger('bx_cron');
         if($logger) {
             $this->setLogger($logger);
+        }
+
+        $showStatus = $input->getOption('status');
+        $byTime = $input->getOption('bytime');
+        if($showStatus) {
+            $sort = ($byTime ? self::SORT_TIME : self::SORT_NAME);
+            $this->showStatus($output, $sort);
+            return 0;
         }
 
         if(EnvHelper::getSwitch('BX_CRONTAB_RUN', EnvHelper::SWITCH_STATE_OFF)) {
@@ -69,6 +85,68 @@ class Cron extends BxCommand {
         $this->executeJobs($output);
 
         $this->release();
+    }
+
+    protected function showStatus(OutputInterface $output, $sort) {
+
+        $table = new Table($output);
+        $table->setStyle('box-double');
+
+        $isSwitchOff = EnvHelper::getSwitch('BX_CRONTAB_RUN', EnvHelper::SWITCH_STATE_OFF);
+
+        $jobs = $this->getCronJobs();
+        $this->sortCronTab($jobs, $sort);
+        $lastExec = 0;
+        $hasError = false;
+
+        foreach($jobs as $cmd => $job) {
+            $execTime = $job['last_exec'];
+            if($execTime > $lastExec) $lastExec = $execTime;
+            if(!empty($job['error'])) {
+                $hasError = true;
+            }
+        }
+
+        $headStr = sprintf(
+            "BX_CRONTAB_RUN: %s;  LAST_EXEC: %s;  AGENTS_COUNT: %d",
+            ($isSwitchOff ? 'OFF' : 'ON'),
+            ($lastExec ? date("d.m.Y H:i:s", $lastExec) : 'NONE'),
+            count($jobs),
+        );
+
+        $header = [
+            'Command',
+            'Period',
+            'Last Exec',
+            'Status',
+        ];
+
+        if($hasError) {
+            $header[] = 'Error';
+        }
+
+        $table->setHeaders([
+            [new TableCell($headStr, ['colspan' => ($hasError ? 5 : 4)])],
+            $header,
+        ]);
+
+        $cnt = 1;
+        foreach($jobs as $cmd => $job) {
+            if($cnt > 1) $table->addRow(new TableSeparator());
+            $row = [
+                $cmd,
+                $job['period'],
+                ($job['last_exec'] ? date("d.m.Y H:i:s", $job['last_exec']) : 'NONE'),
+                $job['status'],
+            ];
+            if($hasError) {
+                $row[] = $job['error'];
+            }
+            $table->addRow($row);
+            $cnt++;
+        }
+
+        $table->render();
     }
 
     protected function cleanJob($command) {
@@ -142,8 +220,6 @@ class Cron extends BxCommand {
                     } finally {
 
                         $job['last_exec'] = time();
-                        $humanDate = new DateTime();
-                        $job['last_date_time'] = $humanDate->toString();
                     }
 
                     $this->updaateJob($cmd, $job);
@@ -240,6 +316,8 @@ class Cron extends BxCommand {
 
     protected function setCronTab(array $agents) {
 
+        $this->sortCronTab($agents);
+
         $filename = EnvHelper::getCrontabFile();
 
         $fh = fopen($filename, 'c');
@@ -275,5 +353,23 @@ class Cron extends BxCommand {
         fclose($fh);
 
         return $cronTab;
+    }
+
+    protected function sortCronTab(array &$crontab, $sort = self::SORT_NAME) {
+
+        if($sort == self::SORT_TIME) {
+            $sorting = [];
+            foreach($crontab as $cmd => $data) {
+                $sorting[$cmd] = $data['last_exec'];
+            }
+            arsort($sorting, SORT_NUMERIC);
+            $sorted = [];
+            foreach($sorting as $cmd => $time) {
+                $sorted[$cmd] = $crontab[$cmd];
+            }
+            $crontab = $sorted;
+        } else {
+            ksort($crontab, SORT_STRING);
+        }
     }
 }
