@@ -12,6 +12,10 @@ class Loader {
 
         if($this->checkBitrix()) {
 
+            if (defined('B_PROLOG_INCLUDED') && B_PROLOG_INCLUDED === true) {
+                return true;
+            }
+
             /**
              * Declare global legacy variables
              *
@@ -57,7 +61,7 @@ class Loader {
                 continue;
             }
 
-            $config = include_once $_SERVER['DOCUMENT_ROOT'] . $cliFile;
+            $config = include $_SERVER['DOCUMENT_ROOT'] . $cliFile;
 
             if (is_array($config['commands']) && count($config['commands']) > 0) {
                 \Bitrix\Main\Loader::includeModule($module['ID']);

@@ -255,7 +255,7 @@ class Cron extends BxCommand {
         return false;
     }
 
-    protected function getCronJobs() {
+    public function getCronJobs() {
 
         /** @var Application $app */
         $app = $this->getApplication();

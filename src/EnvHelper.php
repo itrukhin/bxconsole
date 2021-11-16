@@ -36,6 +36,10 @@ class EnvHelper {
      */
     public static function getDocumentRoot() {
 
+        if(isset($_SERVER['DOCUMENT_ROOT']) && !empty($_SERVER['DOCUMENT_ROOT'])) {
+            return $_SERVER['DOCUMENT_ROOT'];
+        }
+
         $_SERVER['DOCUMENT_ROOT'] = realpath(__DIR__ . '/../../../../');
 
         if(isset($_ENV['APP_DOCUMENT_ROOT']) && is_dir($_ENV['APP_DOCUMENT_ROOT'])) {
