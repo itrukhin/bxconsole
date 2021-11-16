@@ -40,8 +40,6 @@ class EnvHelper {
             return $_SERVER['DOCUMENT_ROOT'];
         }
 
-        $_SERVER['DOCUMENT_ROOT'] = realpath(__DIR__ . '/../../../../');
-
         if(isset($_ENV['APP_DOCUMENT_ROOT']) && is_dir($_ENV['APP_DOCUMENT_ROOT'])) {
             $_SERVER['DOCUMENT_ROOT'] = $_ENV['APP_DOCUMENT_ROOT'];
             return $_SERVER['DOCUMENT_ROOT'];
@@ -55,6 +53,8 @@ class EnvHelper {
                 return $_SERVER['DOCUMENT_ROOT'];
             }
         }
+
+        $_SERVER['DOCUMENT_ROOT'] = realpath(__DIR__ . '/../../../../');
 
         return (string) $_SERVER['DOCUMENT_ROOT'];
     }
