@@ -36,6 +36,8 @@ class Cron extends BxCommand {
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        set_time_limit(EnvHelper::getCrontabTimeout());
+
         $logger = EnvHelper::getLogger('bx_cron');
         if($logger) {
             $this->setLogger($logger);

@@ -90,8 +90,8 @@ class EnvHelper {
 
     public static function getCrontabTimeout() {
 
-        if(isset($_ENV['BX_CRONTAB_FOLDER']) && is_numeric($_ENV['BX_CRONTAB_FOLDER'])) {
-            return (int) $_ENV['BX_CRONTAB_FOLDER'];
+        if(isset($_ENV['BX_CRONTAB_TIMEOUT']) && is_numeric($_ENV['BX_CRONTAB_TIMEOUT'])) {
+            return (int) $_ENV['BX_CRONTAB_TIMEOUT'];
         }
 
         return self::BX_CRONTAB_TIMEOUT;
