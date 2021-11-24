@@ -31,7 +31,8 @@ class Cron extends BxCommand {
             ->setDescription('Job sheduler for application comands')
             ->addOption('status', 's', InputOption::VALUE_NONE, 'Show BX_CRONTAB status table')
             ->addOption('bytime', 't', InputOption::VALUE_NONE, 'Sort status table by exec time desc')
-            ->addOption('clean', 'c', InputOption::VALUE_REQUIRED, 'Command to be clean crontab data (status, last exec)');
+            ->addOption('clean', 'c', InputOption::VALUE_REQUIRED, 'Command to be clean crontab data (status, last exec)')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Command to be clean all crontab data (status, last exec)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -81,6 +82,13 @@ class Cron extends BxCommand {
             $command = $this->getApplication()->find($clean);
             $this->cleanJob($command->getName());
             $output->writeln($command->getName() . " will be executed now");
+            return 0;
+        }
+
+        $cleanAll = $input->getOption('all');
+        if($cleanAll) {
+            $this->cleanJob();
+            $output->writeln("All commands will be executed now");
             return 0;
         }
 
@@ -151,11 +159,14 @@ class Cron extends BxCommand {
         $table->render();
     }
 
-    protected function cleanJob($command) {
+    protected function cleanJob($command = false) {
 
-        $crontab = $this->getCronTab();
+        $crontab = [];
 
-        unset($crontab[$command]);
+        if($command) {
+            $crontab = $this->getCronTab();
+            unset($crontab[$command]);
+        }
 
         $this->setCronTab($crontab);
     }
