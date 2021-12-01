@@ -178,13 +178,13 @@ class Cron extends BxCommand {
 
         $jobs = $this->getCronJobs();
 
-        /*
-         * Минимально допустимый период выполнения одной задачи
-         * при котором гарантируется выполнение всех задач
-         */
-        $this->minAgentPeriod = (count($jobs) + 1) * EnvHelper::getBxCrontabPeriod();
+        if(is_array($jobs) && !empty($jobs)) {
 
-        if(!empty($jobs)) {
+            /*
+             * Минимально допустимый период выполнения одной задачи
+             * при котором гарантируется выполнение всех задач
+             */
+            $this->minAgentPeriod = (count($jobs) + 1) * EnvHelper::getBxCrontabPeriod();
 
             foreach($jobs as $cmd => $job) {
 
