@@ -165,6 +165,9 @@ class Cron extends BxCommand {
 
         if($command) {
             $crontab = $this->getCronTab();
+            if($crontab === false) {
+                return false;
+            }
             unset($crontab[$command]);
         }
 
@@ -270,6 +273,11 @@ class Cron extends BxCommand {
 
     public function getCronJobs() {
 
+        $crontab = $this->getCronTab();
+        if($crontab === false) {
+            return false;
+        }
+
         /** @var Application $app */
         $app = $this->getApplication();
 
@@ -299,8 +307,6 @@ class Cron extends BxCommand {
             }
         }
 
-        $crontab = $this->getCronTab();
-
         foreach($crontab as $cmd => $job) {
             if(is_array($job) && isset($agents[$cmd])) {
                 $agents[$cmd] = array_merge($job, $agents[$cmd]);
@@ -314,21 +320,24 @@ class Cron extends BxCommand {
 
     protected function updaateJob($cmd, $job) {
 
-        $this->updateCronTab([$cmd => $job]);
+        return $this->updateCronTab([$cmd => $job]);
     }
 
     protected function updateCronTab(array $changedAgents) {
 
         $crontab = $this->getCronTab();
 
-        $crontab = array_merge($crontab, $changedAgents);
-
-        $this->setCronTab($crontab);
+        if($crontab === false) {
+            return false;
+        } else {
+            $crontab = array_merge($crontab, $changedAgents);
+            return $this->setCronTab($crontab);
+        }
     }
-
 
     protected function setCronTab(array $agents) {
 
+        $isSuccess = true;
         $this->sortCronTab($agents);
 
         $filename = EnvHelper::getCrontabFile();
@@ -339,28 +348,33 @@ class Cron extends BxCommand {
             if(!fwrite($fh, json_encode($agents, JSON_PRETTY_PRINT))) {
                 throw new \Exception('Unable to write BX_CRONTAB : ' . $filename);
             }
+        } else {
+            $isSuccess = false;
         }
         flock($fh, LOCK_UN);
         fclose($fh);
+
+        return $isSuccess;
     }
 
     /**
-     * @return array
+     * @return array|false|mixed
      */
     protected function getCronTab() {
-
-        $cronTab = [];
 
         $filename = EnvHelper::getCrontabFile();
 
         $fh = fopen($filename, 'r');
         if(flock($fh, LOCK_SH)) {
-            if($data = @fread($fh, filesize($filename))) {
+            $cronTab = [];
+            if($data = fread($fh, filesize($filename))) {
                 $decoded = json_decode($data, true);
                 if(is_array($decoded)) {
                     $cronTab = $decoded;
                 }
             }
+        } else {
+            $cronTab = false;
         }
         flock($fh, LOCK_UN);
         fclose($fh);
