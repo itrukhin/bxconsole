@@ -61,10 +61,10 @@ class Loader {
                 continue;
             }
 
+            \Bitrix\Main\Loader::includeModule($module['ID']);
             $config = include $_SERVER['DOCUMENT_ROOT'] . $cliFile;
 
             if (is_array($config['commands']) && count($config['commands']) > 0) {
-                \Bitrix\Main\Loader::includeModule($module['ID']);
                 $commands = array_merge($commands, $config['commands']);
             }
         }
