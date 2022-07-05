@@ -1,6 +1,7 @@
 #!/usr/bin/php
 <?php
 error_reporting(E_ERROR);
+define('SITE_ID', 's1');
 require_once __DIR__ . '/../../../autoload.php';
 
 $app = new \App\BxConsole\Application();
