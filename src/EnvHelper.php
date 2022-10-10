@@ -6,6 +6,8 @@ use Psr\Log\LoggerInterface;
 class EnvHelper {
 
     const CRON_TAB_FILE = '/bitrix/tmp/bx_crontab.json';
+    const BIN_FILE = '/vendor/bin/bxconsole';
+    const BIN_LOG_PATH = '/home/bitrix/log/';
 
     const SWITCH_STATE_ON = 'on';
     const SWITCH_STATE_OFF = 'off';
@@ -29,6 +31,11 @@ class EnvHelper {
 
             }
         }
+    }
+
+    public static function getBinPath() {
+
+        return pathinfo($_ENV['APP_COMPOSER'], PATHINFO_DIRNAME) . self::BIN_FILE;
     }
 
     /**
