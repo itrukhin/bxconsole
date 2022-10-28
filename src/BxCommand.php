@@ -11,7 +11,7 @@ class BxCommand extends \Symfony\Component\Console\Command\Command implements Lo
     use LoggerAwareTrait;
 
     /**
-     * @return \Symfony\Component\Console\Application
+     * @return Application
      */
     public function getApplication()
     {
