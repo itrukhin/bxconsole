@@ -95,6 +95,8 @@ class Cron extends BxCommand {
         $this->executeJobs($output);
 
         $this->release();
+
+        return 0;
     }
 
     protected function showStatus(OutputInterface $output, $sort) {
