@@ -11,7 +11,7 @@ class BxCommand extends \Symfony\Component\Console\Command\Command implements Lo
     use LoggerAwareTrait;
 
     /**
-     * @return Application
+     * @return \Symfony\Component\Console\Application
      */
     public function getApplication()
     {
@@ -50,7 +50,9 @@ class BxCommand extends \Symfony\Component\Console\Command\Command implements Lo
         if($annotation) {
             $this->setName($annotation->name);
             $this->setDescription($annotation->description);
-            $this->setHelp($annotation->help);
+            if($annotation->help) {
+                $this->setHelp($annotation->help);
+            }
         }
     }
 
