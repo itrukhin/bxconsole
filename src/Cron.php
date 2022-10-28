@@ -35,7 +35,7 @@ class Cron extends BxCommand {
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Command to be clean all crontab data (status, last exec)');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         set_time_limit(EnvHelper::getCrontabTimeout());
 
