@@ -33,9 +33,20 @@ class EnvHelper {
         }
     }
 
+    /**
+     * @return string
+     */
     public static function getBinPath() {
 
         return pathinfo($_ENV['APP_COMPOSER'], PATHINFO_DIRNAME) . self::BIN_FILE;
+    }
+
+    /**
+     * @return string
+     */
+    public static function getPsr4CliNamespace() {
+
+        return $_ENV['APP_CLI_NAMESPACE'] ?: 'App\Cli';
     }
 
     /**

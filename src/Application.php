@@ -3,6 +3,8 @@ namespace App\BxConsole;
 
 use Bitrix\Main\Loader;
 use Bitrix\Main\ModuleManager;
+use Composer\Autoload\ClassLoader;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -28,6 +30,25 @@ class Application extends \Symfony\Component\Console\Application {
         if($this->isBitrixLoaded) {
             foreach($loader->getModulesCommands() as $command) {
                 $this->add($command);
+            }
+        }
+
+        $pas4CliNamespace = EnvHelper::getPsr4CliNamespace();
+        $loaders = ClassLoader::getRegisteredLoaders();
+        if(!empty($loaders)) {
+            $loader = current($loaders);
+            if($loader instanceof ClassLoader) {
+                $map = $loader->getClassMap();
+                foreach($map as $class => $path) {
+                    if(strpos($class, $pas4CliNamespace) === 0) {
+                        try {
+                            $obj = new $class();
+                            if($obj instanceof Command) {
+                                $this->add($obj);
+                            }
+                        } catch (\Exception $e) { }
+                    }
+                }
             }
         }
 
