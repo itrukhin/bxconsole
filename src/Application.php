@@ -34,6 +34,7 @@ class Application extends \Symfony\Component\Console\Application {
         }
 
         $pas4CliNamespace = EnvHelper::getPsr4CliNamespace();
+        /** @scrutinizer ignore-call */
         $loaders = ClassLoader::getRegisteredLoaders();
         if(!empty($loaders)) {
             $loader = current($loaders);
