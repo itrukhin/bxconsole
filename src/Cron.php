@@ -252,7 +252,7 @@ class Cron extends BxCommand {
 
     protected function isActualJob(&$job) {
 
-        if(isset($job['status']) && $job['status'] !== self::EXEC_STATUS_SUCCESS) {
+        if($job['status'] == self::EXEC_STATUS_WORK) {
             return false;
         }
 
