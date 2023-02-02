@@ -59,7 +59,7 @@ class Loader {
 
         foreach (ModuleManager::getInstalledModules() as $module) {
 
-            $cliFile = getLocalPath('modules/' . $module['ID'] . '/cli.php');
+            $cliFile = getLocalPath('modules/' . $module['ID'] . '/.cli.php');
 
             if(!$cliFile) {
                 continue;
