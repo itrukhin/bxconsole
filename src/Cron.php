@@ -367,6 +367,9 @@ class Cron extends BxCommand {
         $filename = EnvHelper::getCrontabFile();
 
         $fh = fopen($filename, 'r');
+        if(!$fh) {
+            return false;
+        }
         if(flock($fh, LOCK_SH)) {
             $cronTab = [];
             if($data = fread($fh, filesize($filename))) {
