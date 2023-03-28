@@ -372,7 +372,8 @@ class Cron extends BxCommand {
         }
         if(flock($fh, LOCK_SH)) {
             $cronTab = [];
-            if($data = fread($fh, filesize($filename))) {
+            $filesize = (int) filesize($filename);
+            if($filesize > 0 && $data = fread($fh, $filesize)) {
                 $decoded = json_decode($data, true);
                 if(is_array($decoded)) {
                     $cronTab = $decoded;
