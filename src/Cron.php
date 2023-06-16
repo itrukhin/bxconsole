@@ -189,7 +189,9 @@ class Cron extends BxCommand {
              * при котором гарантируется выполнение всех задач
              */
             $this->minAgentPeriod = (count($jobs) + 1) * EnvHelper::getBxCrontabPeriod();
-            $this->logger->alert(sprintf("Minimal agent period: %d", $this->minAgentPeriod));
+            $msg = sprintf("Minimal agent period: %d", $this->minAgentPeriod);
+            $this->logger->alert($msg);
+            $output->writeln($msg);
 
             foreach($jobs as $cmd => $job) {
 
