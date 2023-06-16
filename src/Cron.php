@@ -251,14 +251,14 @@ class Cron extends BxCommand {
 
                     $this->updateJob($cmd, $job);
 
-                    $workTime += $execTime;
-                    if($workTime * 2 > $allTimeout) {
-                        break;
-                    }
+//                    $workTime += $execTime;
+//                    if($workTime * 2 > $allTimeout) {
+//                        break;
+//                    }
                     /*
                      * Let's do just one task
                      */
-                    //break;
+                    break;
                 }
             } // foreach($jobs as $cmd => $job)
         } // if(!empty($jobs))
