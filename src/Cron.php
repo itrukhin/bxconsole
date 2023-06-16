@@ -179,6 +179,8 @@ class Cron extends BxCommand {
     protected function executeJobs(OutputInterface $output) {
 
         $jobs = $this->getCronJobs();
+        $allTimeout = EnvHelper::getCrontabTimeout();
+        $workTime = 0;
 
         if(is_array($jobs) && !empty($jobs)) {
 
@@ -187,26 +189,29 @@ class Cron extends BxCommand {
              * при котором гарантируется выполнение всех задач
              */
             $this->minAgentPeriod = (count($jobs) + 1) * EnvHelper::getBxCrontabPeriod();
+            $this->logger->alert(sprintf("Minimal agent period: %d", $this->minAgentPeriod));
 
             foreach($jobs as $cmd => $job) {
 
                 if($this->isActualJob($job)) {
 
                     $job['status'] = self::EXEC_STATUS_WORK;
-                    $this->updaateJob($cmd, $job);
+                    $this->updateJob($cmd, $job);
 
                     $command = $this->getApplication()->find($cmd);
                     $cmdInput = new ArrayInput(['command' => $cmd]);
+                    $timeStart = microtime(true);
+                    $execTime = 0;
                     try {
 
-                        $timeStart = microtime(true);
                         $returnCode = $command->run($cmdInput, $output);
+                        $execTime = microtime(true) - $timeStart;
 
                         if(!$returnCode) {
 
                             $job['status'] = self::EXEC_STATUS_SUCCESS;
 
-                            $msg = sprintf("%s: SUCCESS [%.2f s]", $cmd, microtime(true) - $timeStart);
+                            $msg = sprintf("%s: SUCCESS [%.2f s]", $cmd, $execTime);
                             if($this->logger) {
                                 $this->logger->alert($msg);
                             }
@@ -217,7 +222,7 @@ class Cron extends BxCommand {
                             $job['status'] = self::EXEC_STATUS_ERROR;
                             $job['error_code'] = $returnCode;
 
-                            $msg = sprintf("%s: ERROR [%.2f s]", $cmd, microtime(true) - $timeStart);
+                            $msg = sprintf("%s: ERROR [%.2f s]", $cmd, $execTime);
                             if($this->logger) {
                                 $this->logger->alert($msg);
                             }
@@ -237,14 +242,23 @@ class Cron extends BxCommand {
 
                     } finally {
 
+                        if(!$execTime) {
+                            $execTime = microtime(true) - $timeStart;
+                        }
                         $job['last_exec'] = time();
+                        $job['exec_time'] = round($execTime, 1);
                     }
 
-                    $this->updaateJob($cmd, $job);
+                    $this->updateJob($cmd, $job);
+
+                    $workTime += $execTime;
+                    if($workTime * 2 > $allTimeout) {
+                        break;
+                    }
                     /*
                      * Let's do just one task
                      */
-                    break;
+                    //break;
                 }
             } // foreach($jobs as $cmd => $job)
         } // if(!empty($jobs))
@@ -320,7 +334,7 @@ class Cron extends BxCommand {
         return $agents;
     }
 
-    protected function updaateJob($cmd, $job) {
+    protected function updateJob($cmd, $job) {
 
         return $this->updateCronTab([$cmd => $job]);
     }
