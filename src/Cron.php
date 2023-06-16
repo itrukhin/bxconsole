@@ -251,14 +251,14 @@ class Cron extends BxCommand {
 
                     $this->updateJob($cmd, $job);
 
-//                    $workTime += $execTime;
-//                    if($workTime * 2 > $allTimeout) {
-//                        break;
-//                    }
+                    $workTime += $execTime;
+                    if($workTime * 2 > $allTimeout) {
+                        break;
+                    }
                     /*
                      * Let's do just one task
                      */
-                    break;
+                    //break;
                 }
             } // foreach($jobs as $cmd => $job)
         } // if(!empty($jobs))
@@ -386,11 +386,14 @@ class Cron extends BxCommand {
         }
         if(flock($fh, LOCK_SH)) {
             $cronTab = [];
+            clearstatcache();
             $filesize = (int) filesize($filename);
             if($filesize > 0 && $data = fread($fh, $filesize)) {
                 $decoded = json_decode($data, true);
                 if(is_array($decoded)) {
                     $cronTab = $decoded;
+                } else {
+                    throw new \Exception("Unable to parse cronTab");
                 }
             }
         } else {
