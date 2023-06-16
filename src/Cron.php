@@ -182,7 +182,7 @@ class Cron extends BxCommand {
         $allTimeout = EnvHelper::getCrontabTimeout();
         $workTime = 0;
 
-        if(is_array($jobs) && !empty($jobs)) {
+        if(!empty($jobs)) {
 
             /*
              * Минимально допустимый период выполнения одной задачи
