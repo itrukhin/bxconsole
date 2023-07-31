@@ -198,6 +198,7 @@ class Cron extends BxCommand {
                 if($this->isActualJob($job)) {
 
                     $job['status'] = self::EXEC_STATUS_WORK;
+                    $job['start_time'] = time();
                     $this->updateJob($cmd, $job);
 
                     $command = $this->getApplication()->find($cmd);
