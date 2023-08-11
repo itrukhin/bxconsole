@@ -20,6 +20,8 @@ class Cron extends BxCommand {
     const EXEC_STATUS_ERROR = 'ERROR';
     const EXEC_STATUS_WORK = 'WORK';
 
+    const RESTART_TIME = 3600;
+
     const SORT_NAME = 'name';
     const SORT_TIME = 'time';
 
@@ -270,6 +272,9 @@ class Cron extends BxCommand {
     protected function isActualJob(&$job) {
 
         if($job['status'] == self::EXEC_STATUS_WORK) {
+            if($job['start_time'] && $job['start_time'] < (time() - self::RESTART_TIME)) {
+                return true;
+            }
             return false;
         }
 
