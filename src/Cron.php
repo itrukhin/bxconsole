@@ -25,8 +25,6 @@ class Cron extends BxCommand {
     const SORT_NAME = 'name';
     const SORT_TIME = 'time';
 
-    private $minAgentPeriod;
-
     protected function configure() {
 
         $this->setName('system:cron')
@@ -186,15 +184,6 @@ class Cron extends BxCommand {
 
         if(!empty($jobs)) {
 
-            /*
-             * Минимально допустимый период выполнения одной задачи
-             * при котором гарантируется выполнение всех задач
-             */
-            $this->minAgentPeriod = (count($jobs) + 1) * EnvHelper::getBxCrontabPeriod();
-            $msg = sprintf("Minimal agent period: %d", $this->minAgentPeriod);
-            $this->logger->alert($msg);
-            $output->writeln($msg);
-
             foreach($jobs as $cmd => $job) {
 
                 $job['cmd'] = $cmd;
@@ -283,10 +272,6 @@ class Cron extends BxCommand {
         $period = intval($job['period']);
 
         if($period > 0) {
-            if($period < $this->minAgentPeriod) {
-                $job['orig_period'] = $period;
-                $period = $job['period'] = $this->minAgentPeriod;
-            }
             if(time() - $job['last_exec'] >= $period) {
                 $actual = true;
             }
