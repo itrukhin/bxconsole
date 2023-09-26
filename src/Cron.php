@@ -30,7 +30,7 @@ class Cron extends BxCommand {
     protected function configure() {
 
         $this->setName('system:cron')
-            ->setDescription('Job sheduler for application comands')
+            ->setDescription('Job scheduler for application commands')
             ->addOption('status', 's', InputOption::VALUE_NONE, 'Show BX_CRONTAB status table')
             ->addOption('bytime', 't', InputOption::VALUE_NONE, 'Sort status table by exec time desc')
             ->addOption('clean', 'c', InputOption::VALUE_REQUIRED, 'Command to be clean crontab data (status, last exec)')
@@ -197,6 +197,7 @@ class Cron extends BxCommand {
 
             foreach($jobs as $cmd => $job) {
 
+                $job['cmd'] = $cmd;
                 if($this->isActualJob($job)) {
 
                     $job['status'] = self::EXEC_STATUS_WORK;
@@ -269,13 +270,14 @@ class Cron extends BxCommand {
         } // if(!empty($jobs))
     }
 
-    protected function isActualJob(&$job) {
+    protected function isActualJob(&$job): bool
+    {
+        $actual = false;
 
         if($job['status'] == self::EXEC_STATUS_WORK) {
             if($job['start_time'] && $job['start_time'] < (time() - self::RESTART_TIME)) {
-                return true;
+                $actual = true;
             }
-            return false;
         }
 
         $period = intval($job['period']);
@@ -286,20 +288,36 @@ class Cron extends BxCommand {
                 $period = $job['period'] = $this->minAgentPeriod;
             }
             if(time() - $job['last_exec'] >= $period) {
-                return true;
+                $actual = true;
             }
         } else if(!empty($job['times'])) {
             //TODO:
         }
 
-        return false;
+        if($actual && !empty($job['interval'])) {
+            $times = explode('-', $job['interval']);
+            if(count($times) == 2) {
+                $minTime = Time24::validateTimeString($times[0]);
+                $maxTime = Time24::validateTimeString($times[1]);
+                if($minTime && $maxTime) {
+                    if(!Time24::inInterval($minTime, $maxTime)) {
+                        $msg = sprintf("%s not in interval %s", $job['cmd'], $job['interval']);
+                        if($this->logger) {
+                            $this->logger->alert($msg);
+                        }
+                        return false;
+                    }
+                }
+            }
+        }
+        return $actual;
     }
 
-    public function getCronJobs() {
-
+    public function getCronJobs(): array
+    {
         $crontab = $this->getCronTab();
         if($crontab === false) {
-            return false;
+            return [];
         }
 
         /** @var Application $app */

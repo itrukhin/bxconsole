@@ -3,9 +3,9 @@ namespace App\BxConsole;
 
 class Time24 {
 
-    private $hours = 0;
-    private $minutes = 0;
-    private $seconds = 0;
+    private int $hours = 0;
+    private int $minutes = 0;
+    private int $seconds = 0;
 
     public function __construct($time = '') {
 
@@ -26,15 +26,15 @@ class Time24 {
      * @param int $minutes
      * @param int $seconds
      */
-    public function set($hours, $minutes = 0, $seconds = 0) {
-
+    public function set(int $hours, int $minutes = 0, int $seconds = 0): void
+    {
         $this->setHours($hours);
         $this->setMinutes($minutes);
         $this->setSeconds($seconds);
     }
 
-    public function toString($seconds = true) {
-
+    public function toString($seconds = true): string
+    {
         $timeparts = [];
         $timeparts[] = sprintf("%02d", $this->hours);
         $timeparts[] = sprintf("%02d", $this->minutes);
@@ -47,7 +47,7 @@ class Time24 {
     /**
      * @return int
      */
-    public function getHours()
+    public function getHours(): int
     {
         return $this->hours;
     }
@@ -55,7 +55,7 @@ class Time24 {
     /**
      * @return int
      */
-    public function getMinutes()
+    public function getMinutes(): int
     {
         return $this->minutes;
     }
@@ -63,7 +63,7 @@ class Time24 {
     /**
      * @return int
      */
-    public function getSeconds()
+    public function getSeconds(): int
     {
         return $this->seconds;
     }
@@ -71,7 +71,7 @@ class Time24 {
     /**
      * @param int $hours
      */
-    public function setHours($hours)
+    public function setHours(int $hours): void
     {
         $hours = (int) $hours;
         if($hours < 0) {
@@ -85,7 +85,7 @@ class Time24 {
     /**
      * @param int $minutes
      */
-    public function setMinutes($minutes)
+    public function setMinutes(int $minutes): void
     {
         $minutes = (int) $minutes;
         if($minutes < 0) {
@@ -99,7 +99,7 @@ class Time24 {
     /**
      * @param int $seconds
      */
-    public function setSeconds($seconds)
+    public function setSeconds(int $seconds): void
     {
         $seconds = (int) $seconds;
         if($seconds < 0) {
@@ -110,8 +110,8 @@ class Time24 {
         $this->seconds = $seconds;
     }
 
-    public static function validateTimeString($str) {
-
+    public static function validateTimeString($str): ?string
+    {
         $str = trim($str);
         if(strpos($str, ':') !== false) {
             $timeParts = explode(':', $str);
@@ -123,11 +123,11 @@ class Time24 {
                 return $str;
             }
         }
-        return false;
+        return null;
     }
 
-    public static function inInterval($minStrTime, $maxStrTime, $checkStrTime = '') {
-
+    public static function inInterval($minStrTime, $maxStrTime, $checkStrTime = ''): bool
+    {
         $minTime = new self($minStrTime);
         if($maxStrTime == '00:00') {
             $maxStrTime = '23:59';
