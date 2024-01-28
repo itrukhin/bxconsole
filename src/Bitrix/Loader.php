@@ -25,7 +25,6 @@ class Loader {
             /** @noinspection PhpUnusedLocalVariableInspection */
             $DB, $DBType, $DBHost, $DBLogin, $DBPassword, $DBName, $DBDebug, $DBDebugToFile, $APPLICATION, $USER, $DBSQLServerType;
 
-            define('ADMIN_SECTION', true); // skip frontend scripts
             define('SM_SAFE_MODE', true);
             define('NO_KEEP_STATISTIC', true);
             define('NO_AGENT_STATISTIC', true);
