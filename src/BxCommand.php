@@ -13,7 +13,7 @@ class BxCommand extends \Symfony\Component\Console\Command\Command implements Lo
     /**
      * @return Application
      */
-    public function getApplication()
+    public function getApplication(): ?Application
     {
         return parent::getApplication();
     }
