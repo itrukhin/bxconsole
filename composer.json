@@ -10,11 +10,14 @@
         "email": "mail@itrukhin.ru",
         "homepage": "https://itrukhin.ru/"
     }],
+    "platform": {
+        "php": "^8.0|^8.1|^8.2"
+    },
     "require": {
         "psr/log": "^1.0.1 || ^2.0 || ^3.0",
         "symfony/dotenv": "^5.1",
         "symfony/lock": "^5.3",
-        "symfony/console": "^5.4",
+        "symfony/console": "^6.4",
         "doctrine/annotations": "1.*"
     },
     "autoload": {
